@@ -1,0 +1,1227 @@
+<!doctype html>
+<html lang="de-DE"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zufallsgruppen-Generator · AM-Tools</title>
+  <meta name="description" content="Zufällige Gruppen für den Unterricht bilden, Anwesenheit berücksichtigen und Personen auslosen – lokal im Browser.">
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --danger: #b91c1c;
+      --ok: #166534;
+      --winner-bg: #ecfdf5;
+      --winner-border: #bbf7d0;
+      --winner-text: #166534;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    header {
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      line-height: 1.1;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+    }
+
+    .subtitle,
+    .section-intro,
+    .hint,
+    .file-info {
+      color: var(--muted);
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 860px;
+    }
+
+    .section-intro {
+      margin: -6px 0 16px;
+    }
+
+    .hint,
+    .file-info {
+      margin: 6px 0 0;
+      font-size: 0.92rem;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .person-options {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .option-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #fff;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 420px) 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .mode-grid {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .mode-option {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .mode-option input {
+      margin-top: 4px;
+    }
+
+    label {
+      display: block;
+      font-weight: 650;
+      margin-bottom: 6px;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .file-input-modern {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px;
+      font: inherit;
+      color: var(--muted);
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .file-input-modern::file-selector-button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      margin-right: 12px;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+      background: #e5e7eb;
+      color: var(--text);
+      transition: background 0.15s ease, transform 0.08s ease;
+    }
+
+    .file-input-modern::file-selector-button:hover {
+      background: #d1d5db;
+    }
+
+    .file-input-modern::file-selector-button:active {
+      transform: translateY(1px);
+    }
+
+    input:focus,
+    .file-input-modern:focus,
+    textarea:focus {
+      outline: 3px solid rgba(37, 99, 235, 0.18);
+      border-color: var(--primary);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+      transition: transform 0.08s ease, background 0.15s ease;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+
+    .secondary {
+      background: #e5e7eb;
+      color: var(--text);
+    }
+
+    .secondary:hover:not(:disabled) {
+      background: #d1d5db;
+    }
+
+    .small-button {
+      padding: 8px 12px;
+      font-size: 0.92rem;
+    }
+
+    .status {
+      margin-top: 14px;
+      font-weight: 650;
+      min-height: 1.5em;
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .status.ok {
+      color: var(--ok);
+    }
+
+    .attendance-list {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px;
+    }
+
+    .person-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 10px;
+      background: #fff;
+    }
+
+    .person-row.absent {
+      opacity: 0.62;
+      background: #f9fafb;
+    }
+
+    .person-name {
+      overflow-wrap: anywhere;
+    }
+
+    .absence-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      white-space: nowrap;
+      font-weight: 500;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .badge {
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      color: #3730a3;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.92rem;
+      font-weight: 650;
+    }
+
+    .groups {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .group-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .members {
+      margin: 0 0 14px;
+      padding-left: 22px;
+    }
+
+    .members li {
+      margin-bottom: 3px;
+    }
+
+    .group-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 12px;
+    }
+
+    .winner-box {
+      display: none;
+      margin: 8px 0 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--winner-border);
+      border-radius: 12px;
+      background: var(--winner-bg);
+      color: var(--winner-text);
+      font-weight: 700;
+    }
+
+    .winner-box.visible {
+      display: block;
+    }
+
+    .note-label {
+      margin-top: 12px;
+      font-size: 0.95rem;
+    }
+
+    .group-note {
+      min-height: 80px;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      border: 2px dashed var(--border);
+      border-radius: 18px;
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    @media (max-width: 920px) {
+      .person-options,
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .panel,
+      .actions,
+      .subtitle,
+      .hint,
+      .status,
+      .group-tools,
+      .file-info {
+        display: none !important;
+      }
+
+      .page {
+        max-width: none;
+        padding: 0;
+      }
+
+      .group-card {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+
+      textarea {
+        border: 1px solid #999;
+      }
+
+      .winner-box.visible {
+        display: block !important;
+      }
+    }
+    .am-nav { margin-bottom: 24px; }
+    .am-nav a { color: var(--primary); text-underline-offset: .2em; }
+    .privacy-note { padding: 14px 18px; margin: 20px 0 24px; border-radius: 14px; background: #eef2ff; }
+    :focus-visible { outline: 3px solid #b65b00; outline-offset: 3px; }
+    .option-card, .group-card { min-width: 0; }
+    .file-info, .winner-box, .members { overflow-wrap: anywhere; }
+    .groups { grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+    @media print { .am-nav, .privacy-note { display: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <nav class="am-nav" aria-label="Navigation"><a href="../index.html">← Alle AM-Tools</a></nav>
+    <header>
+      <h1>Zufallsgruppen-Generator</h1>
+      <p class="subtitle">Personen verwalten, Anwesenheit markieren, Gruppen zufällig bilden und pro Gruppe eine Person auslosen.</p>
+    </header>
+    <aside class="privacy-note"><strong>Deine Daten bleiben in diesem Browser:</strong> Namen, Anwesenheit, Einstellungen und der Name der geladenen Datei werden hier lokal gespeichert und beim nächsten Besuch wieder geladen. Dieses Tool überträgt sie nicht an einen Server. Auf gemeinsam genutzten Geräten bitte zum Schluss „Alles zurücksetzen“ wählen. Selbst gespeicherte Dateien und die Zwischenablage bleiben davon unberührt.</aside>
+    <noscript><p class="privacy-note">Bitte aktiviere JavaScript, um Namen zu verwalten und Gruppen zu erstellen.</p></noscript>
+
+    <section class="panel" aria-labelledby="people-heading">
+      <h2 id="people-heading">Personen</h2>
+      <p class="section-intro">Hier kannst du Namen eingeben, eine Namensdatei laden oder einzelne Personen ergänzen.</p>
+
+      <div class="person-options">
+        <article class="option-card">
+          <h3>Kommagetrennte Liste</h3>
+          <div>
+            <label for="peopleInput">Personen eingeben</label>
+            <textarea id="peopleInput" placeholder="z. B. Anna, Ben, Cem, Dana, Elias, Fatima"></textarea>
+          </div>
+          <p class="hint">Namen durch Kommas trennen. Bereits gespeicherte Namen bleiben erhalten.</p>
+          <div class="actions">
+            <button class="secondary" id="applyNamesBtn" type="button">Namen übernehmen</button>
+          </div>
+        </article>
+
+        <article class="option-card">
+          <h3>Namensdatei</h3>
+          <p class="hint">Unterstützt werden JSON-Dateien, kommagetrennte Listen und zeilenweise Namenslisten. Beim Speichern wird – falls vom Browser unterstützt – ein „Speichern unter“-Dialog geöffnet.</p>
+
+          <div>
+            <label for="fileInput">Namensdatei auswählen</label>
+            <input id="fileInput" class="file-input-modern" type="file" accept=".json,.txt,text/plain,application/json">
+            <p class="hint">Nach der Auswahl wird die Datei automatisch geladen.</p>
+          </div>
+
+          <div class="actions">
+            <button class="secondary" id="saveNamesBtn" type="button">Namensdatei speichern</button>
+          </div>
+
+          <div id="fileInfo" class="file-info">Keine Namensdatei geladen.</div>
+        </article>
+
+        <article class="option-card">
+          <h3>Einzeln hinzufügen</h3>
+          <div>
+            <label for="newNameInput">Name</label>
+            <input id="newNameInput" type="text" placeholder="Name">
+          </div>
+          <p class="hint">Mit Enter oder per Schaltfläche hinzufügen.</p>
+          <div class="actions">
+            <button class="secondary" id="addSingleNameBtn" type="button">Name hinzufügen</button>
+          </div>
+        </article>
+      </div>
+
+      <div id="status" class="status" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="attendance-heading">
+      <h2 id="attendance-heading">Gespeicherte Namen und Anwesenheit</h2>
+      <p class="section-intro">Haken bedeutet: Person ist <strong>nicht anwesend</strong>. Für die Gruppen werden nur Personen ohne Haken verwendet.</p>
+      <div id="attendanceList" class="attendance-list"><div class="empty-state">Noch keine Namen gespeichert.</div></div>
+    </section>
+
+    <section class="panel" aria-labelledby="settings-heading">
+      <h2 id="settings-heading">Gruppeneinstellungen und Erstellung</h2>
+      <p class="section-intro">Lege fest, wie die Gruppen gebildet werden sollen, und erstelle anschließend die Zufallsgruppen.</p>
+
+      <div class="settings-grid">
+        <div>
+          <div class="mode-grid" role="radiogroup" aria-label="Gruppenmodus">
+            <label class="mode-option">
+              <input type="radio" name="mode" value="size" checked="">
+              <span>
+                <strong>Personen pro Gruppe vorgeben</strong><br>
+                <span class="hint">Die App berechnet daraus die Anzahl der Gruppen.</span>
+              </span>
+            </label>
+
+            <label class="mode-option">
+              <input type="radio" name="mode" value="count">
+              <span>
+                <strong>Anzahl der Gruppen vorgeben</strong><br>
+                <span class="hint">Die App verteilt die Personen möglichst gleichmäßig.</span>
+              </span>
+            </label>
+          </div>
+
+          <label id="numberLabel" for="groupNumber">Personen pro Gruppe</label>
+          <input id="groupNumber" type="number" min="1" step="1" value="4">
+          <p id="numberHint" class="hint">Diese Zahl ist die maximale Gruppengröße.</p>
+        </div>
+
+        <div>
+          <label>Aktionen</label>
+          <div class="actions">
+            <button class="primary" id="generateBtn" type="button">Gruppen erstellen</button>
+            <button class="secondary" id="resetGroupsBtn" type="button">Gruppen zurücksetzen</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="result-heading">
+      <h2 id="result-heading">Ergebnis</h2>
+      <div id="summary" class="summary"></div>
+      <div id="groups" class="groups"><div class="empty-state">Noch keine Gruppen erstellt.</div></div>
+    </section>
+
+    <section class="panel" aria-labelledby="more-heading">
+      <h2 id="more-heading">Weitere Möglichkeiten</h2>
+      <p class="section-intro">Diese Funktionen beziehen sich auf das Ergebnis oder auf die gesamte Anwendung.</p>
+      <div class="actions">
+        <button class="secondary" id="copyBtn" type="button">Ergebnis kopieren</button>
+        <button class="secondary" id="printBtn" type="button">Drucken</button>
+        <button class="secondary" id="resetAllBtn" type="button">Alles zurücksetzen</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const STORAGE_KEY = "zufallsgruppen-generator-state-v4";
+      const DEFAULT_NAMES_FILE_NAME = "zufallsgruppen-namen.json";
+
+      const state = {
+        mode: "size",
+        groupNumber: 4,
+        people: [],
+        groups: [],
+        fileName: ""
+      };
+
+      function byId(id) {
+        const element = document.getElementById(id);
+        if (!element) throw new Error(`Element mit ID "${id}" wurde nicht gefunden.`);
+        return element;
+      }
+
+      function setStatus(message, type = "ok") {
+        const status = byId("status");
+        status.textContent = message;
+        status.className = `status ${type}`;
+      }
+
+      function normalizeName(name) {
+        return String(name || "").trim().replace(/\s+/g, " ");
+      }
+
+      function parsePeople(input) {
+        return String(input || "")
+          .split(/[,;\n]+/)
+          .map(normalizeName)
+          .filter(Boolean);
+      }
+
+      function mergePeople(names, existingPeople = state.people) {
+        const map = new Map();
+
+        existingPeople.forEach(person => {
+          const name = normalizeName(person.name);
+          if (!name) return;
+          map.set(name.toLowerCase(), {
+            name,
+            absent: Boolean(person.absent)
+          });
+        });
+
+        names.forEach(rawName => {
+          const name = normalizeName(rawName);
+          if (!name) return;
+          const key = name.toLowerCase();
+          if (!map.has(key)) {
+            map.set(key, { name, absent: false });
+          }
+        });
+
+        return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "de"));
+      }
+
+      function peopleFromJsonPayload(payload) {
+        if (Array.isArray(payload)) {
+          if (payload.every(item => typeof item === "string")) {
+            return mergePeople(payload);
+          }
+
+          if (payload.every(item => item && typeof item === "object" && "name" in item)) {
+            return mergePeople(payload.map(item => item.name), payload);
+          }
+        }
+
+        if (payload && Array.isArray(payload.people)) {
+          if (payload.people.every(item => typeof item === "string")) {
+            return mergePeople(payload.people);
+          }
+
+          if (payload.people.every(item => item && typeof item === "object" && "name" in item)) {
+            return mergePeople(payload.people.map(item => item.name), payload.people);
+          }
+        }
+
+        if (payload && Array.isArray(payload.names)) {
+          return mergePeople(payload.names);
+        }
+
+        if (payload && typeof payload.names === "string") {
+          return mergePeople(parsePeople(payload.names));
+        }
+
+        throw new Error("Die Datei enthält keine erkennbare Namensliste.");
+      }
+
+      function peopleFromText(text) {
+        const trimmed = String(text || "").trim();
+        if (!trimmed) throw new Error("Die Datei ist leer.");
+
+        try {
+          const payload = JSON.parse(trimmed);
+          return peopleFromJsonPayload(payload);
+        } catch (jsonError) {
+          const names = parsePeople(trimmed);
+          if (names.length === 0) throw new Error("Es konnten keine Namen erkannt werden.");
+          return mergePeople(names);
+        }
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            mode: state.mode,
+            groupNumber: state.groupNumber,
+            people: state.people,
+            fileName: state.fileName
+          }));
+        } catch (error) {
+          console.warn("localStorage konnte nicht beschrieben werden.", error);
+        }
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const saved = JSON.parse(raw);
+
+          state.mode = saved.mode === "count" ? "count" : "size";
+          state.groupNumber = Number.isInteger(saved.groupNumber) && saved.groupNumber > 0 ? saved.groupNumber : 4;
+          state.people = Array.isArray(saved.people) ? mergePeople(saved.people.map(p => p.name), saved.people) : [];
+          state.fileName = typeof saved.fileName === "string" ? saved.fileName : "";
+        } catch (error) {
+          console.warn("Gespeicherter Zustand konnte nicht geladen werden.", error);
+        }
+      }
+
+      function shuffle(array) {
+        const result = [...array];
+        for (let i = result.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [result[i], result[j]] = [result[j], result[i]];
+        }
+        return result;
+      }
+
+      function distributeIntoGroupCount(shuffledPeople, numberOfGroups) {
+        const baseSize = Math.floor(shuffledPeople.length / numberOfGroups);
+        const groupsWithOneExtraPerson = shuffledPeople.length % numberOfGroups;
+        const groups = [];
+        let index = 0;
+
+        for (let groupIndex = 0; groupIndex < numberOfGroups; groupIndex++) {
+          const size = baseSize + (groupIndex < groupsWithOneExtraPerson ? 1 : 0);
+          groups.push({
+            members: shuffledPeople.slice(index, index + size),
+            note: "",
+            selectedPerson: ""
+          });
+          index += size;
+        }
+
+        return groups;
+      }
+
+      function createGroupsBySize(people, maxGroupSize) {
+        if (!Array.isArray(people)) throw new TypeError("people muss ein Array sein.");
+        if (!Number.isInteger(maxGroupSize) || maxGroupSize < 1) throw new RangeError("Ungültige Gruppengröße.");
+        if (people.length === 0) return [];
+
+        const shuffledPeople = shuffle(people);
+        const numberOfGroups = Math.ceil(shuffledPeople.length / maxGroupSize);
+        return distributeIntoGroupCount(shuffledPeople, numberOfGroups);
+      }
+
+      function createGroupsByCount(people, requestedGroupCount) {
+        if (!Array.isArray(people)) throw new TypeError("people muss ein Array sein.");
+        if (!Number.isInteger(requestedGroupCount) || requestedGroupCount < 1) throw new RangeError("Ungültige Gruppenzahl.");
+        if (people.length === 0) return [];
+
+        const shuffledPeople = shuffle(people);
+        const actualGroupCount = Math.min(requestedGroupCount, people.length);
+        return distributeIntoGroupCount(shuffledPeople, actualGroupCount);
+      }
+
+      function updateModeUi() {
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+          radio.checked = radio.value === state.mode;
+        });
+
+        byId("groupNumber").value = String(state.groupNumber);
+
+        if (state.mode === "size") {
+          byId("numberLabel").textContent = "Personen pro Gruppe";
+          byId("numberHint").textContent = "Diese Zahl ist die maximale Gruppengröße.";
+        } else {
+          byId("numberLabel").textContent = "Anzahl der Gruppen";
+          byId("numberHint").textContent = "Diese Zahl legt fest, wie viele Gruppen gebildet werden.";
+        }
+      }
+
+      function updateFileInfo() {
+        byId("fileInfo").textContent = state.fileName
+          ? `Geladene Namensdatei: ${state.fileName}`
+          : "Keine Namensdatei geladen.";
+      }
+
+      function renderAttendanceList() {
+        const list = byId("attendanceList");
+        list.replaceChildren();
+
+        if (state.people.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty-state";
+          empty.textContent = "Noch keine Namen gespeichert.";
+          list.appendChild(empty);
+          return;
+        }
+
+        state.people.forEach((person, index) => {
+          const row = document.createElement("div");
+          row.className = `person-row${person.absent ? " absent" : ""}`;
+
+          const name = document.createElement("span");
+          name.className = "person-name";
+          name.textContent = person.name;
+          row.appendChild(name);
+
+          const label = document.createElement("label");
+          label.className = "absence-label";
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = person.absent;
+          checkbox.addEventListener("change", () => {
+            state.people[index].absent = checkbox.checked;
+            saveState();
+            renderAttendanceList();
+          });
+
+          label.appendChild(checkbox);
+          label.appendChild(document.createTextNode("nicht anwesend"));
+          row.appendChild(label);
+          list.appendChild(row);
+        });
+      }
+
+      function renderSummary(activePeopleCount, groupCount) {
+        const summary = byId("summary");
+        summary.replaceChildren();
+
+        const absentCount = state.people.filter(person => person.absent).length;
+        const modeText = state.mode === "size"
+          ? `max. ${state.groupNumber} pro Gruppe`
+          : `${state.groupNumber} Gruppe${state.groupNumber === 1 ? "" : "n"} vorgegeben`;
+
+        [`${activePeopleCount} anwesend`, `${absentCount} nicht anwesend`, `${groupCount} Gruppe${groupCount === 1 ? "" : "n"}`, modeText]
+          .forEach(text => {
+            const badge = document.createElement("span");
+            badge.className = "badge";
+            badge.textContent = text;
+            summary.appendChild(badge);
+          });
+      }
+
+      function renderGroups() {
+        const groupsContainer = byId("groups");
+        const summary = byId("summary");
+        groupsContainer.replaceChildren();
+
+        if (state.groups.length === 0) {
+          summary.replaceChildren();
+          const empty = document.createElement("div");
+          empty.className = "empty-state";
+          empty.textContent = "Noch keine Gruppen erstellt.";
+          groupsContainer.appendChild(empty);
+          return;
+        }
+
+        state.groups.forEach((group, index) => {
+          const card = document.createElement("article");
+          card.className = "group-card";
+
+          const title = document.createElement("h3");
+          title.textContent = `Gruppe ${index + 1}`;
+          card.appendChild(title);
+
+          const memberList = document.createElement("ol");
+          memberList.className = "members";
+          group.members.forEach(member => {
+            const li = document.createElement("li");
+            li.textContent = member;
+            memberList.appendChild(li);
+          });
+          card.appendChild(memberList);
+
+          const tools = document.createElement("div");
+          tools.className = "group-tools";
+
+          const drawButton = document.createElement("button");
+          drawButton.type = "button";
+          drawButton.className = "secondary small-button";
+          drawButton.textContent = group.selectedPerson ? "Neu auslosen" : "Person auslosen";
+          drawButton.addEventListener("click", () => drawPersonForGroup(index));
+          tools.appendChild(drawButton);
+
+          const clearButton = document.createElement("button");
+          clearButton.type = "button";
+          clearButton.className = "secondary small-button";
+          clearButton.textContent = "Auslosung löschen";
+          clearButton.disabled = !group.selectedPerson;
+          clearButton.addEventListener("click", () => {
+            state.groups[index].selectedPerson = "";
+            renderGroups();
+            setStatus(`Auslosung für Gruppe ${index + 1} wurde gelöscht.`, "ok");
+          });
+          tools.appendChild(clearButton);
+
+          card.appendChild(tools);
+
+          const winnerBox = document.createElement("div");
+          winnerBox.className = `winner-box${group.selectedPerson ? " visible" : ""}`;
+          winnerBox.textContent = group.selectedPerson ? `Ausgelost: ${group.selectedPerson}` : "";
+          card.appendChild(winnerBox);
+
+          const noteLabel = document.createElement("label");
+          noteLabel.className = "note-label";
+          noteLabel.setAttribute("for", `note-${index}`);
+          noteLabel.textContent = "Bemerkungen";
+          card.appendChild(noteLabel);
+
+          const note = document.createElement("textarea");
+          note.id = `note-${index}`;
+          note.className = "group-note";
+          note.placeholder = "Bemerkungen, Arbeitsauftrag, Material, Rollen ...";
+          note.value = group.note;
+          note.addEventListener("input", () => {
+            state.groups[index].note = note.value;
+          });
+          card.appendChild(note);
+
+          groupsContainer.appendChild(card);
+        });
+      }
+
+      function applyNamesFromTextarea() {
+        const names = parsePeople(byId("peopleInput").value);
+        if (names.length === 0) {
+          setStatus("Bitte gib mindestens einen Namen ein.", "error");
+          return;
+        }
+
+        state.people = mergePeople(names);
+        saveState();
+        renderAttendanceList();
+        setStatus(`${names.length} Name${names.length === 1 ? "" : "n"} wurden übernommen.`, "ok");
+      }
+
+      function addSingleName() {
+        const input = byId("newNameInput");
+        const name = normalizeName(input.value);
+
+        if (!name) {
+          setStatus("Bitte gib einen Namen ein.", "error");
+          return;
+        }
+
+        state.people = mergePeople([name]);
+        input.value = "";
+        saveState();
+        renderAttendanceList();
+        setStatus(`„${name}“ wurde ergänzt.`, "ok");
+      }
+
+      function generateGroups() {
+        const number = Number.parseInt(byId("groupNumber").value, 10);
+        if (!Number.isInteger(number) || number < 1) {
+          setStatus("Bitte gib eine gültige Zahl größer oder gleich 1 ein.", "error");
+          return;
+        }
+
+        state.groupNumber = number;
+        saveState();
+
+        const activePeople = state.people.filter(person => !person.absent).map(person => person.name);
+        if (activePeople.length === 0) {
+          setStatus("Es ist keine Person anwesend.", "error");
+          return;
+        }
+
+        state.groups = state.mode === "size"
+          ? createGroupsBySize(activePeople, state.groupNumber)
+          : createGroupsByCount(activePeople, state.groupNumber);
+
+        renderSummary(activePeople.length, state.groups.length);
+        renderGroups();
+        setStatus("Gruppen wurden erstellt.", "ok");
+      }
+
+      function drawPersonForGroup(groupIndex) {
+        const group = state.groups[groupIndex];
+        if (!group || group.members.length === 0) {
+          setStatus("In dieser Gruppe gibt es keine Person zum Auslosen.", "error");
+          return;
+        }
+
+        const index = Math.floor(Math.random() * group.members.length);
+        group.selectedPerson = group.members[index];
+        renderGroups();
+        setStatus(`Für Gruppe ${groupIndex + 1} wurde ${group.selectedPerson} ausgelost.`, "ok");
+      }
+
+      function groupsAsText() {
+        return state.groups.map((group, index) => {
+          const lines = [
+            `Gruppe ${index + 1}`,
+            `Personen: ${group.members.join(", ")}`
+          ];
+
+          if (group.selectedPerson) lines.push(`Ausgelost: ${group.selectedPerson}`);
+          if (group.note.trim()) lines.push(`Bemerkungen: ${group.note.trim()}`);
+          return lines.join("\n");
+        }).join("\n\n");
+      }
+
+      async function copyResult() {
+        const text = groupsAsText();
+        if (!text) {
+          setStatus("Es gibt noch kein Ergebnis zum Kopieren.", "error");
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(text);
+          setStatus("Ergebnis wurde in die Zwischenablage kopiert.", "ok");
+        } catch (error) {
+          const helper = document.createElement("textarea");
+          helper.value = text;
+          helper.style.position = "fixed";
+          helper.style.left = "-9999px";
+          document.body.appendChild(helper);
+          helper.select();
+          const ok = document.execCommand("copy");
+          document.body.removeChild(helper);
+          setStatus(ok ? "Ergebnis wurde in die Zwischenablage kopiert." : "Kopieren war nicht möglich.", ok ? "ok" : "error");
+        }
+      }
+
+      function namesFilePayload() {
+        return {
+          version: 1,
+          people: state.people.map(person => ({
+            name: person.name,
+            absent: Boolean(person.absent)
+          }))
+        };
+      }
+
+      async function saveNamesFile() {
+        const json = JSON.stringify(namesFilePayload(), null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+
+        if (typeof window.showSaveFilePicker === "function") {
+          try {
+            const fileHandle = await window.showSaveFilePicker({
+              suggestedName: state.fileName && state.fileName !== ""
+                ? state.fileName
+                : DEFAULT_NAMES_FILE_NAME,
+              types: [
+                {
+                  description: "JSON-Namensdatei",
+                  accept: {
+                    "application/json": [".json"]
+                  }
+                }
+              ]
+            });
+
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+
+            state.fileName = fileHandle.name || DEFAULT_NAMES_FILE_NAME;
+            saveState();
+            updateFileInfo();
+            setStatus(`Namensdatei wurde gespeichert als „${state.fileName}“.`, "ok");
+            return;
+          } catch (error) {
+            if (error && error.name === "AbortError") {
+              setStatus("Speichern wurde abgebrochen.", "error");
+              return;
+            }
+
+            console.warn("Speichern-unter-Dialog nicht möglich. Es wird ein Download erzeugt.", error);
+          }
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = state.fileName && state.fileName !== ""
+          ? state.fileName
+          : DEFAULT_NAMES_FILE_NAME;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        setStatus("Ein Speichern-unter-Dialog ist hier nicht verfügbar. Die Namensdatei wurde stattdessen als Download gespeichert.", "ok");
+      }
+
+      function readFileWithFileReader(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.onerror = () => reject(new Error("Die Datei konnte nicht gelesen werden."));
+          reader.readAsText(file, "UTF-8");
+        });
+      }
+
+      async function readFileAsText(file) {
+        if (file && typeof file.text === "function") {
+          return await file.text();
+        }
+        return await readFileWithFileReader(file);
+      }
+
+      async function handleFileInputChange(event) {
+        const input = event.currentTarget;
+        const file = input.files && input.files[0];
+
+        if (!file) {
+          setStatus("Keine Datei ausgewählt.", "error");
+          return;
+        }
+
+        setStatus(`Datei „${file.name}“ wurde ausgewählt und wird gelesen ...`, "ok");
+
+        try {
+          const text = await readFileAsText(file);
+          state.people = peopleFromText(text);
+          state.fileName = file.name;
+          saveState();
+          updateFileInfo();
+          renderAttendanceList();
+          renderGroups();
+          setStatus(`Namensdatei „${file.name}“ wurde geladen. ${state.people.length} Name${state.people.length === 1 ? "" : "n"} sind gespeichert.`, "ok");
+        } catch (error) {
+          setStatus(error.message || "Namensdatei konnte nicht geladen werden.", "error");
+        } finally {
+          input.value = "";
+        }
+      }
+
+      function resetGroups() {
+        state.groups = [];
+        renderGroups();
+        setStatus("Gruppen wurden zurückgesetzt. Die gespeicherten Namen bleiben erhalten.", "ok");
+      }
+
+      function resetAll() {
+        state.mode = "size";
+        state.groupNumber = 4;
+        state.people = [];
+        state.groups = [];
+        state.fileName = "";
+
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+          console.warn("localStorage konnte nicht gelöscht werden.", error);
+        }
+
+        byId("peopleInput").value = "";
+        byId("newNameInput").value = "";
+        byId("fileInput").value = "";
+        updateModeUi();
+        updateFileInfo();
+        renderAttendanceList();
+        renderGroups();
+        setStatus("Alle lokalen Daten wurden zurückgesetzt.", "ok");
+      }
+
+      function runSelfTests() {
+        const tests = [
+          {
+            name: "parsePeople: Komma, Semikolon und Zeilenumbruch",
+            run: () => JSON.stringify(parsePeople("Anna, Ben; Cem\nDana")) === JSON.stringify(["Anna", "Ben", "Cem", "Dana"])
+          },
+          {
+            name: "JSON-Array importieren",
+            run: () => peopleFromText('["Anna", "Ben"]').length === 2
+          },
+          {
+            name: "JSON-Objekt mit people importieren",
+            run: () => peopleFromText('{"people":[{"name":"Anna","absent":false},{"name":"Ben","absent":true}]}').length === 2
+          },
+          {
+            name: "Textliste importieren",
+            run: () => peopleFromText("Anna\nBen\nCem").length === 3
+          },
+          {
+            name: "Gruppen nach Größe 10/max4 ergibt 3 Gruppen",
+            run: () => distributeIntoGroupCount(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"], 3).map(g => g.members.length).join("/") === "4/3/3"
+          }
+        ];
+
+        tests.forEach(test => {
+          try {
+            if (!test.run()) console.error(`Test fehlgeschlagen: ${test.name}`);
+          } catch (error) {
+            console.error(`Testfehler: ${test.name}`, error);
+          }
+        });
+      }
+
+      function init() {
+        loadState();
+        updateModeUi();
+        updateFileInfo();
+        renderAttendanceList();
+        renderGroups();
+
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+          radio.addEventListener("change", () => {
+            state.mode = radio.value === "count" ? "count" : "size";
+            saveState();
+            updateModeUi();
+          });
+        });
+
+        byId("groupNumber").addEventListener("input", () => {
+          const value = Number.parseInt(byId("groupNumber").value, 10);
+          if (Number.isInteger(value) && value > 0) {
+            state.groupNumber = value;
+            saveState();
+          }
+        });
+
+        byId("applyNamesBtn").addEventListener("click", applyNamesFromTextarea);
+        byId("addSingleNameBtn").addEventListener("click", addSingleName);
+        byId("newNameInput").addEventListener("keydown", event => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            addSingleName();
+          }
+        });
+        byId("fileInput").addEventListener("change", handleFileInputChange);
+        byId("saveNamesBtn").addEventListener("click", saveNamesFile);
+        byId("generateBtn").addEventListener("click", generateGroups);
+        byId("copyBtn").addEventListener("click", copyResult);
+        byId("printBtn").addEventListener("click", () => window.print());
+        byId("resetGroupsBtn").addEventListener("click", resetGroups);
+        byId("resetAllBtn").addEventListener("click", resetAll);
+
+        runSelfTests();
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init, { once: true });
+      } else {
+        init();
+      }
+
+      window.ZufallsgruppenApp = {
+        parsePeople,
+        peopleFromText,
+        createGroupsBySize,
+        createGroupsByCount,
+        groupsAsText
+      };
+    })();
+  </script>
+
+
+</body></html>
